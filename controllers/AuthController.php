@@ -11,7 +11,9 @@ class AuthController
 {
     public function handleOauthResponse(): RedirectResponse
     {
-        $azureUser = Socialite::driver('azure')->user();
+        $azureUser = Socialite::driver('azure')
+            ->stateless()
+            ->user();
         $authUser = $this->findOrCreateUser($azureUser);
         auth()->login($authUser, true);
 
