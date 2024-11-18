@@ -10,25 +10,32 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 class UserHelper {
     public static function getAuthUser(SocialiteUser $azureUser): User
     {
-        $userMap = [
-            'givenName'  => 'first_name',
-            'surname'    => 'last_name',
-        ];
 
-        $newUser = new User();
-        $newUser->azure_id = $azureUser->getId();
-        $newUser->email = $azureUser->getEmail();
-        $newUser->login = $azureUser->getEmail();
+        $user = User::where('email', $azureUser->getEmail())->firstOr(function () use ($azureUser) {
+            $userMap = [
+                'givenName'  => 'first_name',
+                'surname'    => 'last_name',
+            ];
 
-        foreach ($userMap as $azureField => $laravelField) {
-            $newUser->{$laravelField} = $azureUser->user[$azureField];
-        }
+            $newUser = new User();
+            $newUser->email = $azureUser->getEmail();
+            $newUser->login = $azureUser->getEmail();
 
-        self::userAdjustments($newUser);
+            foreach ($userMap as $azureField => $laravelField) {
+                $newUser->{$laravelField} = $azureUser->user[$azureField];
+            }
 
-        $newUser->save();
+            self::userAdjustments($newUser);
 
-        return $newUser;
+            $newUser->save();
+
+            return $newUser;
+        });
+
+        $user->azure_id = $azureUser->getId();
+        $user->save();
+
+        return $user;
     }
 
     protected static function userAdjustments(User $user): void
